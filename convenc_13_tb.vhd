@@ -25,6 +25,8 @@ architecture test of convenc_13_tb is
     signal m_axis_ready : std_logic;
     signal s_axis_data  : unsigned(23 downto 0);
     
+    signal encoded_data : unsigned(23 downto 0);
+
     component convenc_13 is 
         port (
             clk           : in  std_logic;
@@ -67,12 +69,33 @@ begin
         wait;
     end process;
 
-
+    ------------------------------------------------
+    --
+    -- AXIS Transmitter - send data to the DUT
+    --
+    ------------------------------------------------
     m_axis_valid <= '1';
     process begin 
         wait until rising_edge(clk);
         if m_axis_valid = '1' and s_axis_ready = '1' then 
-            m_axis_data <= 8x"ac";
+            m_axis_data <= "10100101";
+        end if;
+    end process;
+
+
+
+
+    ------------------------------------------------
+    --
+    -- AXIS Receiver - receive data to the DUT
+    --
+    ------------------------------------------------
+    m_axis_ready <= '1';
+    process begin 
+        wait until rising_edge(clk);
+        if m_axis_ready = '1' and s_axis_valid = '1' then 
+            encoded_data <= s_axis_data;
+            report "RESULT :" & to_string(encoded_data);
         end if;
     end process;
 end architecture;

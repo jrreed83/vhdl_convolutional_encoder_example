@@ -32,7 +32,7 @@ architecture v1 of convenc_13 is
     signal pkt_in :  unsigned( 9 downto 0) := (others => '0'); -- two extra bits to flush through
     signal pkt_out:  unsigned(29 downto 0) := (others => '0');
     
-    type State is (idle, start, encoding, done);
+    type State is (idle, start, encoding, truncate, done);
 
 
     signal curr_state: State := idle;
@@ -78,10 +78,12 @@ begin
                 next_state <= encoding;
             when encoding =>
                 if encoding_complete then 
-                    next_state <= done;
+                    next_state <= truncate;
                 else 
                     next_state <= curr_state;
                 end if;
+            when truncate =>
+                next_state <= done;
             when done =>
                 if write_done then 
                     next_state <= idle;
@@ -92,7 +94,7 @@ begin
 
     end process;     
     
-
+    -- May want to work with next_state, seem to be doing things for a cycle too long!
     encoding_process: process(clk) begin 
         if rising_edge(clk) then 
 
@@ -105,11 +107,11 @@ begin
                     addr_out <= (others => '0');
                     reg_in   <= (others => '0');
                     reg_out  <= (others => '0');
-                    output   <= pkt_out(29 downto 6);
-                    report "output = " & to_string(output);
-                elsif curr_state = encoding then
-                    -- state LOAD_AND_CALCULATE
-                    -- LOAD
+
+                elsif curr_state = truncate then 
+                    -- the lower bits are zeros
+                    output <= pkt_out(29 downto 6); 
+                elsif next_state = encoding then    
                     reg_in(0) <= pkt_in(to_integer(addr_in));
                     reg_in(1) <= reg_in(0);
                     reg_in(2) <= reg_in(1);
@@ -121,24 +123,24 @@ begin
                     reg_out(2) <= reg_in(0)               xor reg_in(2);
 
                     -- two cycles behind LOAD
-                    pkt_out(to_integer(addr_out)+0) <= reg_out(0);
-                    pkt_out(to_integer(addr_out)+1) <= reg_out(1);
-                    pkt_out(to_integer(addr_out)+2) <= reg_out(2);
+                    pkt_out(to_integer(addr_out+0)) <= reg_out(0);
+                    pkt_out(to_integer(addr_out+1)) <= reg_out(1);
+                    pkt_out(to_integer(addr_out+2)) <= reg_out(2);
                     
-                end if;
-
-
-                if next_state = encoding then
+                    
+                        
                     addr_in  <= addr_in  + 1;
                     addr_out <= addr_out + 3;
                 end if;
+
+
             end if;
         end if;
     end process;
 
 
     -- Encoding is complete when once we've processed every bit in the data word.
-    encoding_complete <= '1' when addr_in = pkt_in'length-1 else '0'; 
+    encoding_complete <= '1' when addr_in = pkt_in'length else '0'; 
 
     -- Not satisfied with this system, when encoding is complete, the next state gets set but because 
     -- the process above looks for the current state, the address increments one more time.  We don'time
@@ -152,7 +154,7 @@ begin
     m_axis_ready <= '1' when curr_state = idle else '0';
 
     
-    axis_handshake: process(clk) begin 
+    axis_handshake_input: process(clk) begin 
         if rising_edge(clk) then 
             read_done <= '0';
             if m_axis_ready = '1' and s_axis_valid = '1' then 
@@ -177,6 +179,16 @@ begin
     --
     --------------------------------
     m_axis_valid <= '1' when curr_state = done else '0'; 
-
+    
+    axis_handshake_output: process(clk) begin 
+        if rising_edge(clk) then
+            write_done <= '0';
+            if m_axis_valid = '1' and s_axis_ready = '1' then 
+                write_done  <= '1';
+                m_axis_data <= output;
+            end if;
+            
+        end if;
+    end process;
 
 end architecture;
