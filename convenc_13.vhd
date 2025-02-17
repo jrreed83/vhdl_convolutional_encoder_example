@@ -111,7 +111,7 @@ begin
                 elsif curr_state = truncate then 
                     -- the lower bits are zeros
                     output <= pkt_out(29 downto 6); 
-                elsif next_state = encoding then    
+                elsif curr_state= encoding then    
                     reg_in(0) <= pkt_in(to_integer(addr_in));
                     reg_in(1) <= reg_in(0);
                     reg_in(2) <= reg_in(1);
@@ -127,10 +127,10 @@ begin
                     pkt_out(to_integer(addr_out+1)) <= reg_out(1);
                     pkt_out(to_integer(addr_out+2)) <= reg_out(2);
                     
-                    
-                        
-                    addr_in  <= addr_in  + 1;
-                    addr_out <= addr_out + 3;
+                    if next_state = encoding then    
+                        addr_in  <= addr_in  + 1;
+                        addr_out <= addr_out + 3;
+                    end if;
                 end if;
 
 
@@ -140,7 +140,7 @@ begin
 
 
     -- Encoding is complete when once we've processed every bit in the data word.
-    encoding_complete <= '1' when addr_in = pkt_in'length else '0'; 
+    encoding_complete <= '1' when addr_in = pkt_in'length-1 else '0'; 
 
     -- Not satisfied with this system, when encoding is complete, the next state gets set but because 
     -- the process above looks for the current state, the address increments one more time.  We don'time
