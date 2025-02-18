@@ -45,7 +45,7 @@ architecture test of convenc_13_tb is
 
     function convenc_model(x : unsigned(7 downto 0)) return unsigned is 
         variable output: unsigned(23 downto 0) := (others => '0');
-        variable reg   : unsigned(2 downto 0)  := (others => '0');
+        variable reg   : unsigned( 2 downto 0) := (others => '0');
         variable j     : natural := 0;
     begin 
 
@@ -98,11 +98,25 @@ begin
     --
     ------------------------------------------------
     m_axis_valid <= '1';
-    process begin 
-        wait until rising_edge(clk);
-        if m_axis_valid = '1' and s_axis_ready = '1' then 
-            m_axis_data <= "10100101";
-        end if;
+    process 
+        variable count : natural := 0;
+    begin
+        wait until falling_edge(rst);
+        -- Need to clean this up.  Want the valid signal to be 1 clock cycle wide.  
+        -- The encoder should just be waiting ...
+        while count < 10 loop
+            --wait for 300 ns;
+            --wait until rising_edge(clk);
+            --m_axis_valid <= '1';
+            wait until rising_edge(clk);
+            if m_axis_valid = '1' and s_axis_ready = '1' then 
+                m_axis_data <= "10100101";
+                
+                count := count + 1;
+            end if;
+            --m_axis_valid <= '0';
+        end loop;
+        std.env.finish;
     end process;
 
 
@@ -110,7 +124,7 @@ begin
 
     ------------------------------------------------
     --
-    -- AXIS Receiver - receive data to the DUT
+    -- AXIS Receiver - receive data from the DUT
     --
     ------------------------------------------------
     m_axis_ready <= '1';
@@ -122,4 +136,15 @@ begin
             report "hdddec :" & to_string(convenc_model("10100101"));
         end if;
     end process;
+
+    -----------------------------------------------
+    --
+    -- Score Board
+    --
+    -----------------------------------------------
+    --score_board: process begin 
+    --    wait until transaction_done'transaction;
+
+    --end process;
+
 end architecture;

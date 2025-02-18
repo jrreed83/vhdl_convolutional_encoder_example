@@ -21,7 +21,7 @@ end entity;
 
 
 
-architecture v1 of convenc_13 is 
+architecture v1 of convenc_13 is  
 
     signal reg_in  : unsigned(2 downto 0)  := (others => '0');
     signal reg_out : unsigned(2 downto 0)  := (others => '0');
@@ -144,19 +144,20 @@ begin
 
     -- Not satisfied with this system, when encoding is complete, the next state gets set but because 
     -- the process above looks for the current state, the address increments one more time.  We don'time
-    -- want to grab aother bit from the input after we've exhausted it.
+    -- want to grab another bit from the input after we've exhausted it.
     
-    -------------------------------
+    -------------------------------------------------------------------------------------------
     --
     -- AXIS handshake for the input
     --
-    -------------------------------
-    m_axis_ready <= '1' when curr_state = idle else '0';
-
+    -- invariant - want ready and valid to overlap high for one clock cycle. 
+    --
+    -------------------------------------------------------------------------------------------
     
+    m_axis_ready <= '1' when curr_state = idle else '0'; 
+    read_done <= m_axis_ready and s_axis_valid;
     axis_handshake_input: process(clk) begin 
         if rising_edge(clk) then 
-            read_done <= '0';
             if m_axis_ready = '1' and s_axis_valid = '1' then 
                 --
                 -- Because of the pipeline in the "encoding" state, the output has a latency of 2.
@@ -166,8 +167,6 @@ begin
                 -- bits have been processed.
                 --
                 pkt_in <= "00" & s_axis_data;
-
-                read_done <= '1';
             end if;
         end if;
     end process;
@@ -179,12 +178,10 @@ begin
     --
     --------------------------------
     m_axis_valid <= '1' when curr_state = done else '0'; 
-    
+    write_done <= m_axis_valid  and s_axis_ready;
     axis_handshake_output: process(clk) begin 
         if rising_edge(clk) then
-            write_done <= '0';
             if m_axis_valid = '1' and s_axis_ready = '1' then 
-                write_done  <= '1';
                 m_axis_data <= output;
             end if;
             
