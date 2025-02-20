@@ -2,7 +2,7 @@ library ieee;
   use ieee.std_logic_1164.all;
   use ieee.numeric_std.all;
 
-entity convenc_13 is 
+entity convenc is 
     port (
         clk           : in  std_logic;
         rst           : in  std_logic;
@@ -21,18 +21,16 @@ end entity;
 
 
 
-architecture v1 of convenc_13 is  
+architecture behavioral of convenc is  
 
     signal reg_in  : unsigned(2 downto 0)  := (others => '0');
-    signal reg_out : unsigned(2 downto 0)  := (others => '0');
+    signal fec_out : unsigned(2 downto 0)  := (others => '0');
     signal addr_in : unsigned(5 downto 0)  := (others => '0');
 
     signal addr_out : unsigned(7 downto 0) := (others => '0');
  
-    --signal pkt_in :  unsigned( 7 downto 0) := (others => '0'); -- two extra bits to flush through
-    --signal pkt_out:  unsigned(23 downto 0) := (others => '0');
-    signal pkt_in :  unsigned( 9 downto 0) := (others => '0'); -- two extra bits to flush through
-    signal pkt_out:  unsigned(29 downto 0) := (others => '0');
+    signal pkt_in :  unsigned( 8 downto 0) := (others => '0'); -- two extra bits to flush through
+    signal pkt_out:  unsigned(26 downto 0) := (others => '0');
     
     type State is (idle, start, encoding, truncate, done);
 
@@ -76,16 +74,20 @@ begin
                 else 
                     next_state <= curr_state;
                 end if;
+            
             when start =>
                 next_state <= encoding;
+
             when encoding =>
                 if encoding_complete then 
                     next_state <= truncate;
                 else 
                     next_state <= curr_state;
                 end if;
+            
             when truncate =>
                 next_state <= done;
+            
             when done =>
                 if write_done then 
                     next_state <= idle;
@@ -96,42 +98,36 @@ begin
 
     end process;     
     
-    -- May want to work with next_state, seem to be doing things for a cycle too long!
+    
     encoding_process: process(clk) begin 
         if rising_edge(clk) then 
 
             if rst = '1' then 
-                reg_in  <= (others => '0');
-                reg_out <= (others => '0');
+                reg_in   <= (others => '0');
+                addr_in  <= (others => '0');
+                addr_out <= (others => '0');
             else
                 if curr_state = done then
                     addr_in  <= (others => '0');
                     addr_out <= (others => '0');
                     reg_in   <= (others => '0');
-                    reg_out  <= (others => '0');
 
                 elsif curr_state = truncate then 
                     -- the lower bits are zeros
-                    output <= pkt_out(29 downto 6);
-                elsif curr_state= encoding then
+                    output <= pkt_out(26 downto 3);
+                
+                elsif curr_state = encoding then
                     reg_in(0) <= pkt_in(to_integer(addr_in));
                     reg_in(1) <= reg_in(0);
                     reg_in(2) <= reg_in(1);
 
-                    -- one cycle behind LOAD
-                    reg_out(0) <= reg_in(0) xor reg_in(1) xor reg_in(2);
-                    reg_out(1) <=               reg_in(1) xor reg_in(2);
-                    reg_out(2) <= reg_in(0)               xor reg_in(2);
-
-                    -- two cycles behind LOAD
-                    pkt_out(to_integer(addr_out+0)) <= reg_out(0);
-                    pkt_out(to_integer(addr_out+1)) <= reg_out(1);
-                    pkt_out(to_integer(addr_out+2)) <= reg_out(2);
-                    
-                    if next_state = encoding then    
-                        addr_in  <= addr_in  + 1;
-                        addr_out <= addr_out + 3;
-                    end if;
+                    -- The encoded outputs occur 1 clock cycle after the encoding step
+                    pkt_out(to_integer(addr_out+0)) <= fec_out(0);
+                    pkt_out(to_integer(addr_out+1)) <= fec_out(1);
+                    pkt_out(to_integer(addr_out+2)) <= fec_out(2);
+                        
+                    addr_in  <= addr_in  + 1;
+                    addr_out <= addr_out + 3;
                 end if;
 
 
@@ -139,58 +135,68 @@ begin
         end if;
     end process;
 
-    --process(all) begin 
-    --    if curr_state = encoding then
-    --        reg_out(0) <= reg_in(0) xor reg_in(1) xor reg_in(2);
-    --        reg_out(1) <=               reg_in(1) xor reg_in(2);
-    --        reg_out(2) <= reg_in(0)               xor reg_in(2);
-    --    end if;
-    --end process;
-
+    
     -- Encoding is complete when once we've processed every bit in the data word.
     encoding_complete <= '1' when addr_in = pkt_in'length-1 else '0'; 
-
-    -- Not satisfied with this system, when encoding is complete, the next state gets set but because 
-    -- the process above looks for the current state, the address increments one more time.  We don'time
-    -- want to grab another bit from the input after we've exhausted it.
     
+
+
+    -----------------------------------------------------------------------------
+    --
+    -- Convolutional encoder output
+    --
+    -- Because the outputs are calculated in a combinational logic
+    -- block, they appear roughly in-phase with the input register
+    -- values.  Of course there is propagation delay to worry about,
+    -- but these calculations are so simple that it should be negligible.
+    --
+    -------------------------------------------------------------------------------
+    process(all) begin 
+        fec_out <= (others => '0');
+        if curr_state = encoding then
+            fec_out(0) <= reg_in(0) xor reg_in(1) xor reg_in(2);
+            fec_out(1) <=               reg_in(1) xor reg_in(2);
+            fec_out(2) <= reg_in(0)               xor reg_in(2);
+        end if;
+    end process;
+
     -------------------------------------------------------------------------------------------
     --
     -- AXIS handshake for the input
     --
-    -- invariant - want ready and valid to overlap high for one clock cycle. 
+    -- This logic ensures that the valid and ready signals overlap high
+    -- for exactly one clock cycle.  When these two signals are both high
+    -- on a rising clock edge, the state transitions from 'idle' to 'encoding'
+    -- by asserting an interal 'read_done' signal.
+    --
+    --
+    --
     --
     -------------------------------------------------------------------------------------------
     
     m_axis_ready <= '1' when curr_state = idle else '0'; 
-    read_done <= m_axis_ready and s_axis_valid;
+    read_done    <= m_axis_ready and s_axis_valid;
     axis_handshake_input: process(clk) begin 
         if rising_edge(clk) then 
             if rst = '1' then 
                 pkt_in <= (others => '0');
             else 
                 if m_axis_ready = '1' and s_axis_valid = '1' then 
-                    --
-                    -- Because of the pipeline in the "encoding" state, the output has a latency of 2.
-                    -- As a result, need to run the encoding stage two clock cycles more that we would
-                    -- otherwise.  A simple way to do this it to simply embed the input 8 bits into a 
-                    -- larger 10 bit-wide word and go through the encoding process until the 10
-                    -- bits have been processed.
-                    --
-                    pkt_in <= "00" & s_axis_data;
+                    pkt_in <= "0" & s_axis_data;
                 end if;
             end if;
         end if;
     end process;
 
 
-    --------------------------------
+    ------------------------------------------------------------------------
     --
     -- AXIS handshake for the output
     --
-    --------------------------------
+    ------------------------------------------------------------------------
     m_axis_valid <= '1' when curr_state = done else '0'; 
-    write_done <= m_axis_valid  and s_axis_ready;
+    write_done   <= m_axis_valid  and s_axis_ready;
+    
     axis_handshake_output: process(clk) begin 
         if rising_edge(clk) then
             if rst = '1' then

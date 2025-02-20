@@ -1,5 +1,5 @@
 FLAGS = --std=08 -P../OsvvmLibraries/sim_ghdl/VHDL_LIBS/GHDL-5.0.0-dev
-project=convenc_13
+project=convenc
 design = $(project).vhd 
 test = $(project)_tb.vhd
 entity = $(project)_tb
