@@ -2,15 +2,14 @@ library ieee;
   use ieee.std_logic_1164.all;
   use ieee.numeric_std.all;
 
---library OSVVM ; 
---  context OSVVM.OsvvmContext ;  
-
-library osvvm;
-  use osvvm.ClockResetPkg.all;
-  use osvvm.RandomPkg.all;
+library osvvm; 
+  context osvvm.OsvvmContext;
+  -- Scoreboard stuff not included ...
   use osvvm.ScoreBoardPkg_Unsigned.all; 
-  use osvvm.TbUtilPkg.all;
-  use osvvm.TranscriptPkg.all;
+
+-- The model independent transaction stuff
+library osvvm_common;
+    context osvvm_common.OsvvmCommonContext;    
 
 entity convenc_tb is 
 end entity;
@@ -76,11 +75,14 @@ architecture test of convenc_tb is
 begin
 
 
-    ControlProc: process 
+    Control_Process: process 
         variable count : integer := 0;
         variable item: unsigned(7 downto 0);
     begin 
+        SetTestName("TbUart_Scoreboard1") ;
         MyScoreboard <= osvvm.ScoreboardPkg_Unsigned.NewID("FEC");
+        
+        -- Borrowed from example, what's the point of this ...
         wait for 0 ns; wait for 0 ns;
         
         osvvm.TranscriptPkg.TranscriptOpen("TEST.txt");
@@ -133,13 +135,37 @@ begin
         wait;
     end process;
 
+    
+    
+    ---------------------------------------------------------------------
+    --
+    -- Stimulus Generation
+    --
+    ---------------------------------------------------------------------
+   -- Stimulus_Generation_Proc: process
+   --     variable RV: osvvm.RandomPkg.RandomPType;
+   --     variable data : unsigned(7 downto 0);
+   -- begin
+   --     wait until falling_edge(rst);
+   --
+   --     for i in 1 to 10 loop
+   --         wait until rising_edge(clk);
+   --         data :=  RV.RandUnsigned(Min=>0, Max=>255, Size=>data'length);
+   --                         
+   --         osvvm.ScoreboardPkg_Unsigned.Push(MyScoreboard, convenc_model(data));
+   --
+   --     end loop;
+   --     
+   --     osvvm.TbUtilPkg.WaitForBarrier(test_done);
+  --  
+  --  end process;
     ---------------------------------------------------------------------
     --
     -- AXIS Transmitter - send data to the DUT
     --
     ---------------------------------------------------------------------
     m_axis_valid <= '1';
-    process 
+    AXI_Transmitter_Proc: process 
         variable count : natural := 0;
         variable RV: osvvm.RandomPkg.RandomPType;
         variable data : unsigned(7 downto 0);
@@ -149,7 +175,7 @@ begin
         while count < 10 loop
             wait until rising_edge(clk);
             if m_axis_valid = '1' and s_axis_ready = '1' then 
-                data :=  RV.RandUnsigned(Min=>0, Max=>255, Size=> 8);
+                data :=  RV.RandUnsigned(Min=>0, Max=>255, Size=>data'length);
                 
                 osvvm.ScoreboardPkg_Unsigned.Push(MyScoreboard, data);
                 m_axis_data <= data;
