@@ -5,6 +5,9 @@ library ieee;
 library osvvm;
   use osvvm.ClockResetPkg.all;
   use osvvm.RandomPkg.all;
+  use osvvm.ScoreBoardPkg_Unsigned.all; 
+  use osvvm.TbUtilPkg.all;
+  use osvvm.TranscriptPkg.all;
 
 entity convenc_tb is 
 end entity;
@@ -15,17 +18,18 @@ architecture test of convenc_tb is
     signal clk: std_logic;
     signal rst: std_logic;
     
-
+    -- To DUT
     signal m_axis_valid : std_logic;
     signal s_axis_ready : std_logic;
     signal m_axis_data  : unsigned(7 downto 0) := (others => '0');
 
-
+    -- From DUT
     signal s_axis_valid : std_logic;
     signal m_axis_ready : std_logic;
     signal s_axis_data  : unsigned(23 downto 0);
-    
-    signal encoded_data : unsigned(23 downto 0) := (others => '0');
+   
+    -- From DUT to scoreboard
+    signal dut_out : unsigned(23 downto 0) := (others => '0');
 
     component convenc is 
         port (
@@ -42,7 +46,7 @@ architecture test of convenc_tb is
     end component;
 
 
-
+    -- want to put this in a seperate package
     function convenc_model(x : unsigned(7 downto 0)) return unsigned is 
         variable output: unsigned(23 downto 0) := (others => '0');
         variable reg   : unsigned( 2 downto 0) := (others => '0');
@@ -63,10 +67,41 @@ architecture test of convenc_tb is
         return output;
     end function;
 
+    signal test_done: integer_barrier;
 
-    signal tx_done: boolean;
-    signal rx_done: boolean;
+    signal MyScoreboard : osvvm.ScoreboardPkg_Unsigned.ScoreboardIdType;
 begin
+
+
+    ControlProc: process 
+        variable count : integer := 0;
+        variable item: unsigned(7 downto 0);
+    begin 
+        MyScoreboard <= osvvm.ScoreboardPkg_Unsigned.NewID("FEC");
+        wait for 0 ns; wait for 0 ns;
+        
+        osvvm.TranscriptPkg.TranscriptOpen("TEST.txt");
+        
+        -- Wait for test bench to complete 
+        osvvm.TbUtilPkg.WaitForBarrier(test_done);
+
+        -- Let's see what's in the score-board FIFO 
+        report "Inspect Scoreboard";
+        report " ---------------------------------";
+        for i in 1 to GetItemCount(MyScoreboard) loop 
+            item := Pop(MyScoreboard);
+            report "Item # " & to_string(i) & " is " & to_hex_string(item);
+        end loop;
+        
+        osvvm.TranscriptPkg.Print("this is a test");
+        osvvm.TranscriptPkg.Print("another test");
+        osvvm.TranscriptPkg.TranscriptClose;
+
+        std.env.stop;
+        wait;
+    end process;
+    
+
 
     dut : convenc port map (
         clk          => clk,
@@ -107,21 +142,21 @@ begin
         variable data : unsigned(7 downto 0);
     begin
         wait until falling_edge(rst);
-        -- Need to clean this up.  Want the valid signal to be 1 clock cycle wide.  
-        -- The encoder should just be waiting ...
-        --data :=  RV.RandUnsigned(Min=>0, Max=>255, Size=> 8);
 
         while count < 10 loop
             wait until rising_edge(clk);
             if m_axis_valid = '1' and s_axis_ready = '1' then 
                 data :=  RV.RandUnsigned(Min=>0, Max=>255, Size=> 8);
                 
+                osvvm.ScoreboardPkg_Unsigned.Push(MyScoreboard, data);
                 m_axis_data <= data;
                 count := count + 1;
 
             end if;
         end loop;
-        std.env.finish;
+        
+        osvvm.TbUtilPkg.WaitForBarrier(test_done);
+    
     end process;
 
 
@@ -138,10 +173,12 @@ begin
     begin 
         wait until rising_edge(clk);
         if m_axis_ready = '1' and s_axis_valid = '1' then 
-            encoded_data <= s_axis_data;
+            dut_out <= s_axis_data;
 
-            -- It appears that the dut is 3 clock cycles behind the model
-            report "dut   : " & " " & to_string(count) & " " & to_hex_string(encoded_data);
+            -- It appears that the dut is 3 transactions behind the model.  Maybe add a register?
+            if dut_out /= "00000000" then 
+                report "dut   : " & " " & to_string(count) & " " & to_hex_string(dut_out);
+            end if;
             report "model : " & " " & to_string(count) & " " & to_hex_string(convenc_model(m_axis_data));
 
             count := count + 1;
