@@ -7,6 +7,9 @@ library osvvm;
   -- Scoreboard stuff not included ...
   use osvvm.ScoreBoardPkg_Unsigned.all; 
 
+
+use work.utils_pkg.all;
+
 -- The model independent transaction stuff
 library osvvm_common;
     context osvvm_common.OsvvmCommonContext;    
@@ -49,25 +52,25 @@ architecture test of convenc_tb is
 
 
     -- want to put this in a seperate package
-    function convenc_model(x : unsigned(7 downto 0)) return unsigned is 
-        variable output: unsigned(23 downto 0) := (others => '0');
-        variable reg   : unsigned( 2 downto 0) := (others => '0');
-        variable j     : natural := 0;
-    begin 
-
-        for i in 0 to x'length-1 loop 
-            reg(2) := reg(1);
-            reg(1) := reg(0);
-            reg(0) := x(i);
-
-            output(j+0) := reg(0) xor reg(1) xor reg(2);
-            output(j+1) :=            reg(1) xor reg(2);
-            output(j+2) := reg(0)            xor reg(2);
-
-            j := j + 3;
-        end loop;
-        return output;
-    end function;
+    --function convenc_model(x : unsigned(7 downto 0)) return unsigned is 
+    --    variable output: unsigned(23 downto 0) := (others => '0');
+    --    variable reg   : unsigned( 2 downto 0) := (others => '0');
+    --    variable j     : natural := 0;
+    --begin 
+--
+--        for i in 0 to x'length-1 loop 
+--            reg(2) := reg(1);
+--            reg(1) := reg(0);
+--            reg(0) := x(i);
+--
+--            output(j+0) := reg(0) xor reg(1) xor reg(2);
+--            output(j+1) :=            reg(1) xor reg(2);
+--            output(j+2) := reg(0)            xor reg(2);
+--
+--            j := j + 3;
+--        end loop;
+--        return output;
+--    end function;
 
     signal test_done: integer_barrier;
 
@@ -208,7 +211,7 @@ begin
             if dut_out /= "00000000" then 
                 report "dut   : " & " " & to_string(count) & " " & to_hex_string(dut_out);
             end if;
-            report "model : " & " " & to_string(count) & " " & to_hex_string(convenc_model(m_axis_data));
+            report "model : " & " " & to_string(count) & " " & to_hex_string(fec_model(m_axis_data));
 
             count := count + 1;
         end if;

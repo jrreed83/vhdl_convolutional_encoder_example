@@ -9,9 +9,11 @@ time_resolution = 1ns
 
 all:
 	# 'analysis'
-	ghdl -a $(FLAGS) $(test) $(design)
+	ghdl -a $(FLAGS) utils_pkg.vhd $(test) $(design)
+
 	# 'elaborate'
-	ghdl -e $(FLAGS) $(entity) 
+	ghdl -e $(FLAGS) $(entity)
+
 	# 'run'
 	ghdl -r $(FLAGS) $(entity) --wave=$(entity).ghw --stop-time=$(stop_time)
 
