@@ -31,9 +31,22 @@ architecture behavioral of convenc is
  
     signal pkt_in :  std_logic_vector( 8 downto 0) := (others => '0'); --unsigned( 8 downto 0) := (others => '0'); -- two extra bits to flush through
     signal pkt_out:  std_logic_vector(26 downto 0) := (others => '0'); -- unsigned(26 downto 0) := (others => '0');
-    
-    type State is (idle, start, encoding, truncate, done);
 
+    ---------------------------------------------------------------------------------
+    -- Problem :   issue with ghw file when using OSVVM, so I need to resort 
+    --             to using VCD for waveform dumps.  However, VCD doesn't understand
+    --             enumerations in VHDL.  As an alternative, I'm manually encoding
+    --             the state-machine using one-hot encoding.
+    ---------------------------------------------------------------------------------
+    subtype State is std_logic_vector(4 downto 0);
+    constant idle     : std_logic_vector(4 downto 0) := "00001";
+    constant start    : std_logic_vector(4 downto 0) := "00010";
+    constant encoding : std_logic_vector(4 downto 0) := "00100";
+    constant truncate : std_logic_vector(4 downto 0) := "01000";
+    constant done     : std_logic_vector(4 downto 0) := "10000";
+    --type State is (idle, start, encoding, truncate, done);
+    --attribute fsm_encoding: string;
+    --attribute fsm_encoding of state: type is "one-hot";
 
     signal curr_state: State := idle;
     signal next_state: State := idle;
@@ -94,6 +107,8 @@ begin
                 else 
                     next_state <= curr_state;
                 end if;
+            when others =>
+                next_state <= curr_state;
         end case;
 
     end process;     
