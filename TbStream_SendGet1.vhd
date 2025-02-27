@@ -4,8 +4,12 @@ architecture SendGet1 of TestCtrl is
    
     constant num_words: natural := 5;
 
-
     use work.TestbenchUtilsPkg.all;
+
+    -- use scoreboard ...
+    use osvvm.ScoreboardPkg_slv.all ;
+    
+    signal MyScoreboard : osvvm.ScoreboardPkg_slv.ScoreboardIdType;
 begin
 
   ------------------------------------------------------------
@@ -15,13 +19,15 @@ begin
   ControlProc : process
   begin
     -- Initialization of test
-    SetTestName("TbStream_SendGet1") ;
+    SetTestName("TbStream_SendGet1"); 
     SetLogEnable(PASSED, TRUE) ;    -- Enable PASSED logs
     SetLogEnable(INFO, TRUE) ;    -- Enable INFO logs
 
+    MyScoreboard <= NewID("SB1");
+
     -- Wait for simulation elaboration/initialization 
     wait for 0 ns ;  wait for 0 ns ;
-    TranscriptOpen ;
+    TranscriptOpen;
     SetTranscriptMirror(TRUE) ; 
 
     -- Wait for Design Reset
@@ -33,8 +39,7 @@ begin
     AlertIf(now >= 35 ms, "Test finished due to timeout") ;
     AlertIf(GetAffirmCount < 1, "Test is not Self-Checking");
     
-    TranscriptClose ; 
-    --AffirmIfTranscriptsMatch(OSVVM_VALIDATED_RESULTS_DIR) ;   
+    TranscriptClose ;   
    
        
     -- Expecting two check errors at 128 and 256
@@ -49,7 +54,9 @@ begin
   --   Generate transactions for AxiTransmitter
   ------------------------------------------------------------
   TransmitterProc : process
-    variable Data : std_logic_vector(DATA_WIDTH-1 downto 0) := (others=>'0');
+    
+    variable Data : std_logic_vector(DATA_WIDTH_TX-1 downto 0) := (others=>'0');
+    --variable Data : std_logic_vector(DATA_WIDTH-1 downto 0) := (others=>'0');
     variable OffSet : integer ; 
     variable TransactionCount : integer; 
     variable ErrorCount : integer; 
@@ -62,9 +69,14 @@ begin
     log("Send " & to_string(num_words) & " words with each byte incrementing") ;
     for i in 1 to num_words loop 
         -- Create words one byte at a time
-        Data(7 downto 0) := std_logic_vector(to_unsigned(i, 8));  
+        --Data(7 downto 0) := std_logic_vector(to_unsigned(i, 8));  
+        Data := std_logic_vector(to_unsigned(i, DATA_WIDTH_TX));
         Send(StreamTxRec, Data) ;
-        
+
+        --
+
+        Push(MyScoreboard, fec_model(Data));        
+        --Push(MyScoreboard, fec_model(Data(7 downto 0)));        
         -- want to push to score board too 
         
         GetTransactionCount(StreamTxRec, TransactionCount) ;
@@ -83,9 +95,9 @@ begin
   --   Generate transactions for AxiReceiver
   ------------------------------------------------------------
   ReceiverProc : process
-    variable PreviousModel: std_logic_vector(DATA_WIDTH-1 downto 0) := (others => '0');  
-    variable CurrentModel:  std_logic_vector(DATA_WIDTH-1 downto 0) := (others => '0');  
-    variable RxData : std_logic_vector(DATA_WIDTH-1 downto 0) ;  
+      
+    variable RxData : std_logic_vector(DATA_WIDTH_RX-1 downto 0) ;  
+    --variable RxData : std_logic_vector(DATA_WIDTH-1 downto 0) ;  
     variable OffSet : integer ; 
     variable TransactionCount : integer ;     
     variable ErrorCount : integer; 
@@ -93,15 +105,16 @@ begin
     variable TxAlertLogID : AlertLogIDType ; 
   begin
     WaitForClock(StreamRxRec, 2) ; 
-    
-    for i in 1 to num_words loop 
-        
-        PreviousModel := CurrentModel;
-        CurrentModel(23 downto 0) := fec_model(std_logic_vector(to_unsigned(i, 8)));  
+
+    -- The convolutional encoder is one transaction behind.  
+    -- So let's get the first one and throw it away.
+    Get(StreamRxRec, RxData);
+
+    for i in 1 to num_words-1 loop 
         
         Get(StreamRxRec, RxData) ; 
-
-        AffirmIfEqual(RxData(23 downto 0), PreviousModel(23 downto 0), "Get: ");
+        Check(MyScoreboard, RxData); --RxData(23 downto 0));
+        
         wait for 0 ns; 
      end loop ;
      

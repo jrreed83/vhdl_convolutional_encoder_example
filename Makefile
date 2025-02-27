@@ -1,37 +1,23 @@
 FLAGS = --std=08 -P../OsvvmLibraries/sim_ghdl/VHDL_LIBS/GHDL-5.0.0-dev
-project=convenc
-design = $(project).vhd 
-test = $(project)_tb.vhd
-entity = $(project)_tb
-
+dut=convenc
+sequencer=TestCtrl_e
+test_harness=TbStream
+test_case=TbStream_SendGet1
+utils = TestbenchUtilsPkg
 stop_time = 50us
-time_resolution = 1ns
 
 all:
 	# 'analysis'
-	ghdl -a $(FLAGS) TestbenchUtilsPkg.vhd convenc.vhd TestCtrl_e.vhd TbStream.vhd TbStream_SendGet1.vhd 
-
-	#ghdl -a $(FLAGS) TestbenchUtilsPkg.vhd $(design) $(test)
+	ghdl -a ${FLAGS} ${utils}.vhd ${dut}.vhd ${sequencer}.vhd ${test_harness}.vhd ${test_case}.vhd 
 
 	# 'elaborate'
-	ghdl -e $(FLAGS) TbStream
-	#ghdl -e $(FLAGS) $(entity)
+	ghdl -e ${FLAGS} ${test_harness}
 
 	# 'run'
-	ghdl -r $(FLAGS) TbStream --vcd=out.vcd --stop-time=$(stop_time)
+	ghdl -r ${FLAGS} ${test_harness} --vcd=${test_case}.vcd --stop-time=${stop_time}
 
-linear: 
-
-	# 'analysis'
-
-	ghdl -a $(FLAGS) TestbenchUtilsPkg.vhd convenc.vhd convenc_tb.vhd
-
-	# 'elaborate'
-	ghdl -e $(FLAGS) convenc_tb
-
-	# 'run'
-	ghdl -r $(FLAGS) convenc_tb  --vcd=out.vcd --stop-time=$(stop_time)
 view:
-	gtkwave out.vcd
+	gtkwave ${test_case}.vcd
+
 clean:
-	rm *.cf $(entity).ghw
+	rm -f *.cf *.ghw *.vcd

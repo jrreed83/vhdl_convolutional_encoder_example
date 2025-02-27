@@ -25,9 +25,16 @@ architecture TestHarness of TbStream is
 
     constant Clock_Period : time := 10 ns;
     constant tpd          : time := 2 ns;
+
+
+    constant AXI_TX_DATA_WIDTH   : integer := 24 ;
+    constant AXI_TX_BYTE_WIDTH   : integer := AXI_TX_DATA_WIDTH/8 ; 
     
-    constant AXI_DATA_WIDTH   : integer := 32 ;
-    constant AXI_BYTE_WIDTH   : integer := AXI_DATA_WIDTH/8 ; 
+    constant AXI_RX_DATA_WIDTH   : integer := 8 ;
+    constant AXI_RX_BYTE_WIDTH   : integer := AXI_RX_DATA_WIDTH/8 ; 
+    
+    --constant AXI_DATA_WIDTH   : integer := 32 ;
+    --constant AXI_BYTE_WIDTH   : integer := AXI_DATA_WIDTH/8 ; 
     constant TID_MAX_WIDTH    : integer := 8 ;
     constant TDEST_MAX_WIDTH  : integer := 4 ;
     constant TUSER_MAX_WIDTH  : integer := 4 ;
@@ -37,27 +44,38 @@ architecture TestHarness of TbStream is
     constant INIT_USER   : std_logic_vector(TUSER_MAX_WIDTH-1 downto 0) := (others => '0') ; 
 
 
-    
-
 
     signal TxTValid, RxTValid    : std_logic ;
     signal TxTReady, RxTReady    : std_logic ; 
     signal TxTID   , RxTID       : std_logic_vector(TID_MAX_WIDTH-1 downto 0) ; 
     signal TxTDest , RxTDest     : std_logic_vector(TDEST_MAX_WIDTH-1 downto 0) ; 
     signal TxTUser , RxTUser     : std_logic_vector(TUSER_MAX_WIDTH-1 downto 0) ; 
-    signal TxTData , RxTData     : std_logic_vector(AXI_DATA_WIDTH-1 downto 0) ; 
-    signal TxTStrb , RxTStrb     : std_logic_vector(AXI_BYTE_WIDTH-1 downto 0) ; 
-    signal TxTKeep , RxTKeep     : std_logic_vector(AXI_BYTE_WIDTH-1 downto 0) ; 
+    --signal TxTData , RxTData     : std_logic_vector(AXI_DATA_WIDTH-1 downto 0) ; 
+    --signal TxTStrb , RxTStrb     : std_logic_vector(AXI_BYTE_WIDTH-1 downto 0) ; 
+    --signal TxTKeep , RxTKeep     : std_logic_vector(AXI_BYTE_WIDTH-1 downto 0) ; 
     signal TxTLast , RxTLast     : std_logic ; 
+
+
+    signal TxTStrb : std_logic_vector(AXI_TX_BYTE_WIDTH-1 downto 0) ; 
+    signal RxTStrb : std_logic_vector(AXI_RX_BYTE_WIDTH-1 downto 0) ; 
+    signal TxTKeep : std_logic_vector(AXI_TX_BYTE_WIDTH-1 downto 0) ; 
+    signal RxTKeep : std_logic_vector(AXI_RX_BYTE_WIDTH-1 downto 0) ; 
+    signal TxTData : std_logic_vector(AXI_TX_DATA_WIDTH-1 downto 0);
+    signal RxTData : std_logic_vector(AXI_RX_DATA_WIDTH-1 downto 0);
 
     constant AXI_PARAM_WIDTH : integer := TID_MAX_WIDTH + TDEST_MAX_WIDTH + TUSER_MAX_WIDTH + 1 ;
 
 
     signal StreamTxRec, StreamRxRec : StreamRecType(
-        DataToModel   (AXI_DATA_WIDTH-1    downto 0),
-        DataFromModel (AXI_DATA_WIDTH-1    downto 0),
+
+        DataToModel   (AXI_RX_DATA_WIDTH-1 downto 0),
+        DataFromModel (AXI_TX_DATA_WIDTH-1 downto 0),
         ParamToModel  (AXI_PARAM_WIDTH-1   downto 0),
         ParamFromModel(AXI_PARAM_WIDTH-1   downto 0)
+        --DataToModel   (AXI_DATA_WIDTH-1    downto 0),
+        --DataFromModel (AXI_DATA_WIDTH-1    downto 0),
+        --ParamToModel  (AXI_PARAM_WIDTH-1   downto 0),
+        --ParamFromModel(AXI_PARAM_WIDTH-1   downto 0)
     ) ;  
 
 
@@ -87,12 +105,12 @@ begin
         rst          => rst,
 
         -- Receive from AXIS transmitter
-        s_axis_data  => RxTData(7 downto 0), -- The DUT expects 8 input bits, extract subsequence
+        s_axis_data  => RxTData, --(7 downto 0), -- The DUT expects 8 input bits, extract subsequence
         s_axis_valid => RxTValid,
         m_axis_ready => RxTReady,
   
         -- Send to AXIS receiver
-        m_axis_data  => TxTData(23 downto 0), -- The dut outputs 24 bits, place in the larger std logic array 
+        m_axis_data  => TxTData, --(23 downto 0), -- The dut outputs 24 bits, place in the larger std logic array 
         m_axis_valid => TxTValid,
         s_axis_ready => TxTReady
     );

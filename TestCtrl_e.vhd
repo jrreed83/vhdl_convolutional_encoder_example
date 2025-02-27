@@ -3,12 +3,12 @@ library ieee ;
   use ieee.numeric_std.all ;
   use ieee.numeric_std_unsigned.all ;
   
-library OSVVM ; 
-  context OSVVM.OsvvmContext ; 
-  use osvvm.ScoreboardPkg_slv.all ;
+library osvvm ; 
+  context osvvm.OsvvmContext ; 
 
 library osvvm_AXI4 ;
     context osvvm_AXI4.AxiStreamContext ;
+
 
 --use work.OsvvmTestCommonPkg.all ;
 
@@ -29,7 +29,14 @@ entity TestCtrl is
   ) ;
 
   -- Derive AXI interface properties from the StreamTxRec
-  constant DATA_WIDTH : integer := StreamTxRec.DataToModel'length ; 
-  constant DATA_BYTES : integer := DATA_WIDTH/8 ; 
+  --constant DATA_WIDTH : integer := StreamTxRec.DataToModel'length ; 
+  --constant DATA_BYTES : integer := DATA_WIDTH/8 ; 
   
+  constant DATA_WIDTH_TX : integer := StreamTxRec.DataToModel'length ; 
+  constant DATA_BYTES_TX : integer := DATA_WIDTH_TX/8 ; 
+
+  constant DATA_WIDTH_RX : integer := StreamRxRec.DataFromModel'length ; 
+  constant DATA_BYTES_RX : integer := DATA_WIDTH_RX/8 ; 
+  --constant DATA_WIDTH : integer := StreamTxRec.DataToModel'length ; 
+  --constant DATA_BYTES : integer := DATA_WIDTH/8 ; 
 end entity TestCtrl ;
