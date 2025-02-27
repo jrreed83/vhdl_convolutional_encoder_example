@@ -7,12 +7,13 @@ library osvvm;
   -- Scoreboard stuff not included ...
   use osvvm.ScoreBoardPkg_Unsigned.all; 
 
-
-use work.utils_pkg.all;
+library work;
+  use work.TestbenchUtilsPkg.all;
 
 -- The model independent transaction stuff
 library osvvm_common;
     context osvvm_common.OsvvmCommonContext;    
+
 
 entity convenc_tb is 
 end entity;
@@ -26,55 +27,36 @@ architecture test of convenc_tb is
     -- To DUT
     signal m_axis_valid : std_logic;
     signal s_axis_ready : std_logic;
-    signal m_axis_data  : unsigned(7 downto 0) := (others => '0');
+    signal m_axis_data  : std_logic_vector(7 downto 0) := (others => '0'); --unsigned(7 downto 0) := (others => '0');
 
     -- From DUT
     signal s_axis_valid : std_logic;
     signal m_axis_ready : std_logic;
-    signal s_axis_data  : unsigned(23 downto 0);
+    signal s_axis_data  : std_logic_vector(23 downto 0); --unsigned(23 downto 0);
    
     -- From DUT to scoreboard
-    signal dut_out : unsigned(23 downto 0) := (others => '0');
+    signal dut_out : std_logic_vector(23 downto 0) := (others => '0'); -- unsigned(23 downto 0) := (others => '0');
 
     component convenc is 
         port (
             clk           : in  std_logic;
             rst           : in  std_logic;
-            s_axis_data   : in  unsigned(7 downto 0);
+            s_axis_data   : in  std_logic_vector(7 downto 0); --unsigned(7 downto 0);
             s_axis_valid  : in  std_logic;
             m_axis_ready  : out std_logic;
 
-            m_axis_data   : out unsigned(23 downto 0);
+            m_axis_data   : out std_logic_vector(23 downto 0); --unsigned(23 downto 0);
             m_axis_valid  : out std_logic;
             s_axis_ready  : in  std_logic
         );
     end component;
 
 
-    -- want to put this in a seperate package
-    --function convenc_model(x : unsigned(7 downto 0)) return unsigned is 
-    --    variable output: unsigned(23 downto 0) := (others => '0');
-    --    variable reg   : unsigned( 2 downto 0) := (others => '0');
-    --    variable j     : natural := 0;
-    --begin 
---
---        for i in 0 to x'length-1 loop 
---            reg(2) := reg(1);
---            reg(1) := reg(0);
---            reg(0) := x(i);
---
---            output(j+0) := reg(0) xor reg(1) xor reg(2);
---            output(j+1) :=            reg(1) xor reg(2);
---            output(j+2) := reg(0)            xor reg(2);
---
---            j := j + 3;
---        end loop;
---        return output;
---    end function;
-
     signal test_done: integer_barrier;
 
     signal MyScoreboard : osvvm.ScoreboardPkg_Unsigned.ScoreboardIdType;
+
+    signal TestRec: MyRecType;
 begin
 
 
@@ -82,10 +64,10 @@ begin
         variable count : integer := 0;
         variable item: unsigned(7 downto 0);
     begin 
+        
         SetTestName("TbUart_Scoreboard1") ;
         MyScoreboard <= osvvm.ScoreboardPkg_Unsigned.NewID("FEC");
-        
-        -- Borrowed from example, what's the point of this ...
+
         wait for 0 ns; wait for 0 ns;
         
         osvvm.TranscriptPkg.TranscriptOpen("TEST.txt");
@@ -139,48 +121,29 @@ begin
     end process;
 
     
-    
-    ---------------------------------------------------------------------
-    --
-    -- Stimulus Generation
-    --
-    ---------------------------------------------------------------------
-   -- Stimulus_Generation_Proc: process
-   --     variable RV: osvvm.RandomPkg.RandomPType;
-   --     variable data : unsigned(7 downto 0);
-   -- begin
-   --     wait until falling_edge(rst);
-   --
-   --     for i in 1 to 10 loop
-   --         wait until rising_edge(clk);
-   --         data :=  RV.RandUnsigned(Min=>0, Max=>255, Size=>data'length);
-   --                         
-   --         osvvm.ScoreboardPkg_Unsigned.Push(MyScoreboard, convenc_model(data));
-   --
-   --     end loop;
-   --     
-   --     osvvm.TbUtilPkg.WaitForBarrier(test_done);
-  --  
-  --  end process;
     ---------------------------------------------------------------------
     --
     -- AXIS Transmitter - send data to the DUT
     --
     ---------------------------------------------------------------------
+    --AXI_Transmitter (
+    --);
+    -- want to receive transactions from the test sequencer and wiggle the pins 
+
     m_axis_valid <= '1';
     AXI_Transmitter_Proc: process 
         variable count : natural := 0;
         variable RV: osvvm.RandomPkg.RandomPType;
-        variable data : unsigned(7 downto 0);
+        variable data : std_logic_vector(7 downto 0);
     begin
         wait until falling_edge(rst);
 
         while count < 10 loop
             wait until rising_edge(clk);
             if m_axis_valid = '1' and s_axis_ready = '1' then 
-                data :=  RV.RandUnsigned(Min=>0, Max=>255, Size=>data'length);
+                data :=  std_logic_vector(RV.RandUnsigned(Min=>0, Max=>255, Size=>data'length));
                 
-                osvvm.ScoreboardPkg_Unsigned.Push(MyScoreboard, data);
+                osvvm.ScoreboardPkg_Unsigned.Push(MyScoreboard, unsigned(data));
                 m_axis_data <= data;
                 count := count + 1;
 
@@ -211,7 +174,7 @@ begin
             if dut_out /= "00000000" then 
                 report "dut   : " & " " & to_string(count) & " " & to_hex_string(dut_out);
             end if;
-            report "model : " & " " & to_string(count) & " " & to_hex_string(fec_model(m_axis_data));
+            report "model : " & " " & to_string(count) & " " & to_hex_string(fec_model(unsigned(m_axis_data)));
 
             count := count + 1;
         end if;

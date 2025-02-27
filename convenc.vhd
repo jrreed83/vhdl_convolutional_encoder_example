@@ -8,12 +8,12 @@ entity convenc is
         rst           : in  std_logic;
 
         -- input AXI-stream interface
-        s_axis_data   : in  unsigned(7 downto 0);
+        s_axis_data   : in  std_logic_vector(7 downto 0); -- in  unsigned(7 downto 0);
         s_axis_valid  : in  std_logic;
         m_axis_ready  : out std_logic;
 
         -- output AXI-stream interface
-        m_axis_data:  out unsigned(23 downto 0);
+        m_axis_data:  out std_logic_vector(23 downto 0); --out unsigned(23 downto 0);
         m_axis_valid: out std_logic;
         s_axis_ready: in  std_logic
     );
@@ -23,14 +23,14 @@ end entity;
 
 architecture behavioral of convenc is  
 
-    signal reg_in  : unsigned(2 downto 0)  := (others => '0');
-    signal fec_out : unsigned(2 downto 0)  := (others => '0');
+    signal reg_in  : std_logic_vector(2 downto 0); --unsigned(2 downto 0)  := (others => '0');
+    signal fec_out : std_logic_vector(2 downto 0); --unsigned(2 downto 0)  := (others => '0');
     signal addr_in : unsigned(5 downto 0)  := (others => '0');
 
     signal addr_out : unsigned(7 downto 0) := (others => '0');
  
-    signal pkt_in :  unsigned( 8 downto 0) := (others => '0'); -- two extra bits to flush through
-    signal pkt_out:  unsigned(26 downto 0) := (others => '0');
+    signal pkt_in :  std_logic_vector( 8 downto 0) := (others => '0'); --unsigned( 8 downto 0) := (others => '0'); -- two extra bits to flush through
+    signal pkt_out:  std_logic_vector(26 downto 0) := (others => '0'); -- unsigned(26 downto 0) := (others => '0');
     
     type State is (idle, start, encoding, truncate, done);
 
@@ -44,8 +44,8 @@ architecture behavioral of convenc is
     signal encoding_complete: std_logic;
 
 
-    signal output: unsigned(23 downto 0) := (others => '0');
-
+    signal output:  std_logic_vector(23 downto 0) := (others => '0'); -- unsigned(23 downto 0) := (others => '0');
+    
 begin
 
     --------------------------------------------------------
