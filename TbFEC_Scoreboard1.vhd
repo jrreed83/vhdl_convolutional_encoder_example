@@ -1,8 +1,8 @@
-architecture SendGet1 of TestCtrl is
+architecture Scoreboard1 of TestCtrl is
 
     signal   TestDone : integer_barrier := 1 ;
    
-    constant num_words: natural := 5;
+    constant num_words: natural := 50;
 
     use work.TestbenchUtilsPkg.all;
 
@@ -19,7 +19,7 @@ begin
   ControlProc : process
   begin
     -- Initialization of test
-    SetTestName("TbStream_SendGet1"); 
+    SetTestName("TbFEC_Scoreboard1"); 
     SetLogEnable(PASSED, TRUE) ;    -- Enable PASSED logs
     SetLogEnable(INFO, TRUE) ;    -- Enable INFO logs
 
@@ -56,28 +56,24 @@ begin
   TransmitterProc : process
     
     variable Data : std_logic_vector(DATA_WIDTH_TX-1 downto 0) := (others=>'0');
-    --variable Data : std_logic_vector(DATA_WIDTH-1 downto 0) := (others=>'0');
+    
     variable OffSet : integer ; 
     variable TransactionCount : integer; 
     variable ErrorCount : integer; 
     variable CurTime : time ; 
-    variable TxAlertLogID : AlertLogIDType ; 
+    variable TxAlertLogID : AlertLogIDType ;
+    variable Rand: RandomPType;
   begin
     wait until nReset = '1' ;  
     WaitForClock(StreamTxRec, 2) ; 
     
     log("Send " & to_string(num_words) & " words with each byte incrementing") ;
     for i in 1 to num_words loop 
-        -- Create words one byte at a time
-        --Data(7 downto 0) := std_logic_vector(to_unsigned(i, 8));  
-        Data := std_logic_vector(to_unsigned(i, DATA_WIDTH_TX));
+        -- Create words one byte at a time  
+        Data := Rand.RandSlv(Min=>0, Max=> 2**DATA_WIDTH_TX-1, Size=>DATA_WIDTH_TX);
         Send(StreamTxRec, Data) ;
 
-        --
-
-        Push(MyScoreboard, fec_model(Data));        
-        --Push(MyScoreboard, fec_model(Data(7 downto 0)));        
-        -- want to push to score board too 
+        Push(MyScoreboard, fec_model(Data));         
         
         GetTransactionCount(StreamTxRec, TransactionCount) ;
         wait for 0 ns ;       wait for 0 ns ; 
@@ -97,7 +93,7 @@ begin
   ReceiverProc : process
       
     variable RxData : std_logic_vector(DATA_WIDTH_RX-1 downto 0) ;  
-    --variable RxData : std_logic_vector(DATA_WIDTH-1 downto 0) ;  
+     
     variable OffSet : integer ; 
     variable TransactionCount : integer ;     
     variable ErrorCount : integer; 
@@ -113,7 +109,7 @@ begin
     for i in 1 to num_words-1 loop 
         
         Get(StreamRxRec, RxData) ; 
-        Check(MyScoreboard, RxData); --RxData(23 downto 0));
+        Check(MyScoreboard, RxData);
         
         wait for 0 ns; 
      end loop ;
@@ -124,12 +120,12 @@ begin
     wait ;
   end process ReceiverProc ;
 
-end SendGet1 ;
+end architecture ;
 
-Configuration TbStream_SendGet1 of TbStream is
+Configuration TbFEC_SendGet1 of TbFEC is
   for TestHarness
     for TestCtrl_1 : TestCtrl
-      use entity work.TestCtrl(SendGet1) ; 
+      use entity work.TestCtrl(Scoreboard1) ; 
     end for ; 
   end for ; 
-end TbStream_SendGet1 ; 
+end Configuration ; 

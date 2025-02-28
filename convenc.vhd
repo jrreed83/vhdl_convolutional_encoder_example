@@ -2,18 +2,22 @@ library ieee;
   use ieee.std_logic_1164.all;
   use ieee.numeric_std.all;
 
-entity convenc is 
+entity convenc is
+    generic (
+        NUM_INPUT_BITS  : natural := 8;
+        NUM_OUTPUT_BITS : natural := NUM_INPUT_BITS * 3
+    );
     port (
         clk           : in  std_logic;
         rst           : in  std_logic;
 
         -- input AXI-stream interface
-        s_axis_data   : in  std_logic_vector(7 downto 0); -- in  unsigned(7 downto 0);
+        s_axis_data   : in  std_logic_vector(NUM_INPUT_BITS-1 downto 0); -- in  unsigned(7 downto 0);
         s_axis_valid  : in  std_logic;
         m_axis_ready  : out std_logic;
 
         -- output AXI-stream interface
-        m_axis_data:  out std_logic_vector(23 downto 0); --out unsigned(23 downto 0);
+        m_axis_data:  out std_logic_vector(NUM_OUTPUT_BITS-1 downto 0); --out unsigned(23 downto 0);
         m_axis_valid: out std_logic;
         s_axis_ready: in  std_logic
     );

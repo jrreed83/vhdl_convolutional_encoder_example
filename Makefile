@@ -1,8 +1,8 @@
 FLAGS = --std=08 -P../OsvvmLibraries/sim_ghdl/VHDL_LIBS/GHDL-5.0.0-dev
 dut=convenc
 sequencer=TestCtrl_e
-test_harness=TbStream
-test_case=TbStream_SendGet1
+test_harness=TbFEC
+test_case=TbFEC_Scoreboard1
 utils = TestbenchUtilsPkg
 stop_time = 50us
 
@@ -20,4 +20,4 @@ view:
 	gtkwave ${test_case}.vcd
 
 clean:
-	rm -f *.cf *.ghw *.vcd
+	rm -f *.cf *.ghw *.vcd *.log *.yml

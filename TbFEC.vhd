@@ -12,11 +12,11 @@ library osvvm_common;
 library osvvm_axi4;
     context osvvm_axi4.AxiStreamContext;
 
-entity TbStream is 
+entity TbFEC is 
 end entity;
 
 
-architecture TestHarness of TbStream is
+architecture TestHarness of TbFEC is
 
     
     signal clk    : std_logic;
@@ -50,9 +50,6 @@ architecture TestHarness of TbStream is
     signal TxTID   , RxTID       : std_logic_vector(TID_MAX_WIDTH-1 downto 0) ; 
     signal TxTDest , RxTDest     : std_logic_vector(TDEST_MAX_WIDTH-1 downto 0) ; 
     signal TxTUser , RxTUser     : std_logic_vector(TUSER_MAX_WIDTH-1 downto 0) ; 
-    --signal TxTData , RxTData     : std_logic_vector(AXI_DATA_WIDTH-1 downto 0) ; 
-    --signal TxTStrb , RxTStrb     : std_logic_vector(AXI_BYTE_WIDTH-1 downto 0) ; 
-    --signal TxTKeep , RxTKeep     : std_logic_vector(AXI_BYTE_WIDTH-1 downto 0) ; 
     signal TxTLast , RxTLast     : std_logic ; 
 
 
@@ -72,10 +69,6 @@ architecture TestHarness of TbStream is
         DataFromModel (AXI_TX_DATA_WIDTH-1 downto 0),
         ParamToModel  (AXI_PARAM_WIDTH-1   downto 0),
         ParamFromModel(AXI_PARAM_WIDTH-1   downto 0)
-        --DataToModel   (AXI_DATA_WIDTH-1    downto 0),
-        --DataFromModel (AXI_DATA_WIDTH-1    downto 0),
-        --ParamToModel  (AXI_PARAM_WIDTH-1   downto 0),
-        --ParamFromModel(AXI_PARAM_WIDTH-1   downto 0)
     ) ;  
 
 
@@ -105,12 +98,12 @@ begin
         rst          => rst,
 
         -- Receive from AXIS transmitter
-        s_axis_data  => RxTData, --(7 downto 0), -- The DUT expects 8 input bits, extract subsequence
+        s_axis_data  => RxTData, 
         s_axis_valid => RxTValid,
         m_axis_ready => RxTReady,
   
         -- Send to AXIS receiver
-        m_axis_data  => TxTData, --(23 downto 0), -- The dut outputs 24 bits, place in the larger std logic array 
+        m_axis_data  => TxTData, 
         m_axis_valid => TxTValid,
         s_axis_ready => TxTReady
     );
