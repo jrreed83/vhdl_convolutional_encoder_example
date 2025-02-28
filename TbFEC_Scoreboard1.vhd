@@ -122,7 +122,7 @@ begin
 
 end architecture ;
 
-Configuration TbFEC_SendGet1 of TbFEC is
+Configuration TbFEC_Scoreboard1 of TbFEC is
   for TestHarness
     for TestCtrl_1 : TestCtrl
       use entity work.TestCtrl(Scoreboard1) ; 

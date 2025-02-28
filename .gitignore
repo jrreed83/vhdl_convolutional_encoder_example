@@ -3,3 +3,7 @@
 *.vcd
 *.yml
 *.log
+*.xml
+*.png
+*.css
+*.html
