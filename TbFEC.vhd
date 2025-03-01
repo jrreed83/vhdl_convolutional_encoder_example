@@ -27,14 +27,10 @@ architecture TestHarness of TbFEC is
     constant tpd          : time := 2 ns;
 
 
-    constant AXI_TX_DATA_WIDTH   : integer := 24 ;
-    constant AXI_TX_BYTE_WIDTH   : integer := AXI_TX_DATA_WIDTH/8 ; 
+    constant AXI_DATA_WIDTH   : integer := 32 ;
+    constant AXI_BYTE_WIDTH   : integer := AXI_DATA_WIDTH/8 ; 
     
-    constant AXI_RX_DATA_WIDTH   : integer := 8 ;
-    constant AXI_RX_BYTE_WIDTH   : integer := AXI_RX_DATA_WIDTH/8 ; 
     
-    --constant AXI_DATA_WIDTH   : integer := 32 ;
-    --constant AXI_BYTE_WIDTH   : integer := AXI_DATA_WIDTH/8 ; 
     constant TID_MAX_WIDTH    : integer := 8 ;
     constant TDEST_MAX_WIDTH  : integer := 4 ;
     constant TUSER_MAX_WIDTH  : integer := 4 ;
@@ -53,22 +49,22 @@ architecture TestHarness of TbFEC is
     signal TxTLast , RxTLast     : std_logic ; 
 
 
-    signal TxTStrb : std_logic_vector(AXI_TX_BYTE_WIDTH-1 downto 0) ; 
-    signal RxTStrb : std_logic_vector(AXI_RX_BYTE_WIDTH-1 downto 0) ; 
-    signal TxTKeep : std_logic_vector(AXI_TX_BYTE_WIDTH-1 downto 0) ; 
-    signal RxTKeep : std_logic_vector(AXI_RX_BYTE_WIDTH-1 downto 0) ; 
-    signal TxTData : std_logic_vector(AXI_TX_DATA_WIDTH-1 downto 0);
-    signal RxTData : std_logic_vector(AXI_RX_DATA_WIDTH-1 downto 0);
+    signal TxTStrb : std_logic_vector(AXI_BYTE_WIDTH-1 downto 0) ; 
+    signal RxTStrb : std_logic_vector(AXI_BYTE_WIDTH-1 downto 0) ; 
+    signal TxTKeep : std_logic_vector(AXI_BYTE_WIDTH-1 downto 0) ; 
+    signal RxTKeep : std_logic_vector(AXI_BYTE_WIDTH-1 downto 0) ; 
+    signal TxTData : std_logic_vector(AXI_DATA_WIDTH-1 downto 0);
+    signal RxTData : std_logic_vector(AXI_DATA_WIDTH-1 downto 0);
 
     constant AXI_PARAM_WIDTH : integer := TID_MAX_WIDTH + TDEST_MAX_WIDTH + TUSER_MAX_WIDTH + 1 ;
 
 
     signal StreamTxRec, StreamRxRec : StreamRecType(
 
-        DataToModel   (AXI_RX_DATA_WIDTH-1 downto 0),
-        DataFromModel (AXI_TX_DATA_WIDTH-1 downto 0),
-        ParamToModel  (AXI_PARAM_WIDTH-1   downto 0),
-        ParamFromModel(AXI_PARAM_WIDTH-1   downto 0)
+        DataToModel   (AXI_DATA_WIDTH-1  downto 0),
+        DataFromModel (AXI_DATA_WIDTH-1  downto 0),
+        ParamToModel  (AXI_PARAM_WIDTH-1 downto 0),
+        ParamFromModel(AXI_PARAM_WIDTH-1 downto 0)
     ) ;  
 
 
@@ -93,7 +89,7 @@ begin
     ----------------------------------------------
     -- Device under test
     ----------------------------------------------
-    DUT : entity work.convenc port map (
+    DUT : entity work.convenc_top port map (
         clk          => clk,
         rst          => rst,
 
@@ -101,11 +97,13 @@ begin
         s_axis_data  => RxTData, 
         s_axis_valid => RxTValid,
         m_axis_ready => RxTReady,
-  
+        s_axis_last  => RxTLast,
+
         -- Send to AXIS receiver
         m_axis_data  => TxTData, 
         m_axis_valid => TxTValid,
-        s_axis_ready => TxTReady
+        s_axis_ready => TxTReady,
+        m_axis_last  => TxTLast
     );
 
     

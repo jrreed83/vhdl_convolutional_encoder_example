@@ -1,5 +1,6 @@
 FLAGS = --std=08 -P../OsvvmLibraries/sim_ghdl/VHDL_LIBS/GHDL-5.0.0-dev
-dut=convenc
+device_top=convenc_top
+device=convenc
 sequencer=TestCtrl_e
 test_harness=TbFEC
 test_case=TbFEC_Scoreboard1
@@ -8,7 +9,7 @@ stop_time = 50us
 
 all:
 	# 'analysis'
-	ghdl -a ${FLAGS} ${utils}.vhd ${dut}.vhd ${sequencer}.vhd ${test_harness}.vhd ${test_case}.vhd 
+	ghdl -a ${FLAGS} ${utils}.vhd ${device}.vhd ${device_top}.vhd ${sequencer}.vhd ${test_harness}.vhd ${test_case}.vhd 
 
 	# 'elaborate'
 	ghdl -e ${FLAGS} ${test_harness}

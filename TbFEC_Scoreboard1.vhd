@@ -10,6 +10,9 @@ architecture Scoreboard1 of TestCtrl is
     use osvvm.ScoreboardPkg_slv.all ;
     
     signal MyScoreboard : osvvm.ScoreboardPkg_slv.ScoreboardIdType;
+
+    constant NUM_BITS_TX : natural := 8;
+    constant NUM_BITS_RX : natural := 24;
 begin
 
   ------------------------------------------------------------
@@ -55,7 +58,7 @@ begin
   ------------------------------------------------------------
   TransmitterProc : process
     
-    variable Data : std_logic_vector(DATA_WIDTH_TX-1 downto 0) := (others=>'0');
+    variable Data : std_logic_vector(DATA_WIDTH-1 downto 0) := (others=>'0');
     
     variable OffSet : integer ; 
     variable TransactionCount : integer; 
@@ -70,10 +73,10 @@ begin
     log("Send " & to_string(num_words) & " words with each byte incrementing") ;
     for i in 1 to num_words loop 
         -- Create words one byte at a time  
-        Data := Rand.RandSlv(Min=>0, Max=> 2**DATA_WIDTH_TX-1, Size=>DATA_WIDTH_TX);
+        Data := Rand.RandSlv(Min=>0, Max=> 2**(NUM_BITS_TX)-1, Size=>DATA_WIDTH);
         Send(StreamTxRec, Data) ;
 
-        Push(MyScoreboard, fec_model(Data));         
+        Push(MyScoreboard, fec_model(Data(NUM_BITS_TX-1 downto 0)));         
         
         GetTransactionCount(StreamTxRec, TransactionCount) ;
         wait for 0 ns ;       wait for 0 ns ; 
@@ -92,7 +95,7 @@ begin
   ------------------------------------------------------------
   ReceiverProc : process
       
-    variable RxData : std_logic_vector(DATA_WIDTH_RX-1 downto 0) ;  
+    variable RxData : std_logic_vector(DATA_WIDTH-1 downto 0) ;  
      
     variable OffSet : integer ; 
     variable TransactionCount : integer ;     
@@ -109,7 +112,7 @@ begin
     for i in 1 to num_words-1 loop 
         
         Get(StreamRxRec, RxData) ; 
-        Check(MyScoreboard, RxData);
+        Check(MyScoreboard, RxData(NUM_BITS_RX-1 downto 0));
         
         wait for 0 ns; 
      end loop ;

@@ -7,3 +7,9 @@
 *.png
 *.css
 *.html
+*.xsa
+*.bit 
+*.hwh 
+
+fec_loopback/*
+vivado/

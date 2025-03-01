@@ -12,14 +12,16 @@ entity convenc is
         rst           : in  std_logic;
 
         -- input AXI-stream interface
-        s_axis_data   : in  std_logic_vector(NUM_INPUT_BITS-1 downto 0); -- in  unsigned(7 downto 0);
+        s_axis_data   : in  std_logic_vector(NUM_INPUT_BITS-1 downto 0); 
         s_axis_valid  : in  std_logic;
         m_axis_ready  : out std_logic;
+        s_axis_last   : in  std_logic;
 
         -- output AXI-stream interface
-        m_axis_data:  out std_logic_vector(NUM_OUTPUT_BITS-1 downto 0); --out unsigned(23 downto 0);
-        m_axis_valid: out std_logic;
-        s_axis_ready: in  std_logic
+        m_axis_data   : out std_logic_vector(NUM_OUTPUT_BITS-1 downto 0); 
+        m_axis_valid  : out std_logic;
+        s_axis_ready  : in  std_logic;
+        m_axis_last   : out std_logic
     );
 end entity;
 
@@ -61,8 +63,9 @@ architecture behavioral of convenc is
     signal encoding_complete: std_logic;
 
 
-    signal output:  std_logic_vector(23 downto 0) := (others => '0'); -- unsigned(23 downto 0) := (others => '0');
+    signal output:  std_logic_vector(23 downto 0) := (others => '0'); 
     
+    signal num_tx_pkts : unsigned(3 downto 0) := (others => '0');
 begin
 
     --------------------------------------------------------
@@ -228,4 +231,26 @@ begin
         end if;
     end process;
 
+    ------------------------------------------------------------------------
+    --
+    -- Dealing with the AXI LAST Signal
+    --
+    ------------------------------------------------------------------------
+    --process (clk) begin 
+    --    if rising_edge(clk) then 
+    --        if rst then 
+    --            num_tx_pkts <= (others => '0');
+    --        else 
+    --            if write_done then
+    --                if num_tx_pkts = 1 then 
+    --                    num_tx_pkts <= (others => '0');
+    --                else 
+    --                    num_tx_pkts <= num_tx_pkts + 1;
+    --                end if;
+    --            end if;
+    --        end if;
+    --    end if;
+    --end process;
+
+    m_axis_last <= s_axis_last; --'1' when (num_tx_pkts = 1 and m_axis_valid = '1') else '0';
 end architecture;

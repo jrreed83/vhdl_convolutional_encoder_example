@@ -29,10 +29,7 @@ entity TestCtrl is
   -- Derive AXI interface properties from the StreamTxRec
   
   -- From the AXIS transmitter to the DUT
-  constant DATA_WIDTH_TX : integer := StreamTxRec.DataToModel'length ; 
-  constant DATA_BYTES_TX : integer := DATA_WIDTH_TX/8 ; 
+  constant DATA_WIDTH : integer := StreamTxRec.DataToModel'length ; 
+  constant DATA_BYTES : integer := DATA_WIDTH/8 ; 
 
-  -- From the DUT to the AXIS receiver
-  constant DATA_WIDTH_RX : integer := StreamRxRec.DataFromModel'length ; 
-  constant DATA_BYTES_RX : integer := DATA_WIDTH_RX/8 ; 
 end entity TestCtrl ;
