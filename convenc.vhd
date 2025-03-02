@@ -50,6 +50,7 @@ architecture behavioral of convenc is
     constant encoding : std_logic_vector(4 downto 0) := "00100";
     constant truncate : std_logic_vector(4 downto 0) := "01000";
     constant done     : std_logic_vector(4 downto 0) := "10000";
+    
     --type State is (idle, start, encoding, truncate, done);
     --attribute fsm_encoding: string;
     --attribute fsm_encoding of state: type is "one-hot";
@@ -252,5 +253,5 @@ begin
     --    end if;
     --end process;
 
-    m_axis_last <= s_axis_last; --'1' when (num_tx_pkts = 1 and m_axis_valid = '1') else '0';
+    m_axis_last <= m_axis_valid; --'1' when (num_tx_pkts = 1 and m_axis_valid = '1') else '0';
 end architecture;

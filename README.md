@@ -3,6 +3,14 @@
 - Rate 1/3 convolutional encoder.
 - Uses OSVVM scoreboard, AXI-Stream verification components, and constrained randomization.
 
+The testbench environment consists of the following elements:
+
+* design under test
+* sequencer
+* test-harness 
+* score board
+
+
 ## Scripting
 
 My default TCL shell came with the Anaconda distribution of Python.  This version totally chokes on 
@@ -47,3 +55,44 @@ offers.  Then everything works.  Pretty annoying!
 To use the Pynq libraries from the Python command line, you need to login as root and use python3.  Once you'version
 ssh'd into the development board, issue `sudo -i` at the command line and type in your password again.  Now you're the 
 root user.
+
+1. Login 
+
+```sh
+ssh xilinx@192.168.2.99 
+```
+
+2. Login as root 
+
+```sh 
+sudo -i 
+```
+
+3. Start up Python 
+
+```sh 
+python3
+```
+
+4. Load overlay 
+
+```sh 
+import numpy as np 
+from pynq import Overlay 
+from pynq import allocate 
+
+ol = Overlay("fec_loopback/fec_loopback.bit")
+dma = ol.axi_dma_0
+
+i_buffer = allocate(shape=(1,), dtype=np.uint32)
+o_buffer = allocate(shape=(1,), dtype=np.uint32)
+
+i_buffer[0] = 3
+
+dma.sendchannel.transfer(i_buffer)
+dma.recvchannel.transfer(o_buffer)
+dma.sendchannel.wait()
+dma.recvchannel.wait()
+```
+
+
