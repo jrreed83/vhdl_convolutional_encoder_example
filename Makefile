@@ -21,4 +21,4 @@ view:
 	gtkwave ${test_case}.vcd
 
 clean:
-	rm -f *.cf *.ghw *.vcd *.log *.yml *.html *.xml
+	rm -f *.cf *.ghw *.vcd *.log *.yml *.html *.xml reports/* log/*

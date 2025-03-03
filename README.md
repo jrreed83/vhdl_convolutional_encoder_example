@@ -95,4 +95,7 @@ dma.sendchannel.wait()
 dma.recvchannel.wait()
 ```
 
+## DMA
+
+The memory-mapped address width should be set to 64 bits.  Otherwise the loopback test fails every other word.
 

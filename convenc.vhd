@@ -237,21 +237,21 @@ begin
     -- Dealing with the AXI LAST Signal
     --
     ------------------------------------------------------------------------
-    --process (clk) begin 
-    --    if rising_edge(clk) then 
-    --        if rst then 
-    --            num_tx_pkts <= (others => '0');
-    --        else 
-    --            if write_done then
-    --                if num_tx_pkts = 1 then 
-    --                    num_tx_pkts <= (others => '0');
-    --                else 
-    --                    num_tx_pkts <= num_tx_pkts + 1;
-    --                end if;
-    --            end if;
-    --        end if;
-    --    end if;
-    --end process;
+    process (clk) begin 
+        if rising_edge(clk) then 
+            if rst then 
+                num_tx_pkts <= (others => '0');
+            else 
+                if write_done then
+                    if num_tx_pkts = 9 then 
+                        num_tx_pkts <= (others => '0');
+                    else 
+                        num_tx_pkts <= num_tx_pkts + 1;
+                    end if;
+                end if;
+            end if;
+        end if;
+    end process;
 
-    m_axis_last <= m_axis_valid; --'1' when (num_tx_pkts = 1 and m_axis_valid = '1') else '0';
+    m_axis_last <= '1' when (num_tx_pkts = 9 and m_axis_valid = '1') else '0';
 end architecture;
