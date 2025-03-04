@@ -10,6 +10,4 @@
 *.xsa
 *.bit 
 *.hwh 
-
-fec_loopback/*
 vivado/
